@@ -4,6 +4,9 @@ class InstagramInterface(object):
     def __init__(self, chromedrive_executable_path):
         self.driver = webdriver.Chrome(executable_path=chromedrive_executable_path)
 
+    def resize_window(self, width, height):
+        self.driver.set_window_size(width, height)
+
     def close(self):
         self.driver.close()
 

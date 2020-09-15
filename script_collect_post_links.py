@@ -35,6 +35,10 @@ scrolls down
 new post links appear (lazy-load)
 repeat
 """
+"""
+resized the window because in one case, I think get_available_posts_links failed.
+"""
+ii.resize_window(1080, 780)
 while len(collected_post_links) < posts_count:
     """
     This while loop was added because there
@@ -42,12 +46,16 @@ while len(collected_post_links) < posts_count:
     threw exception. this happened because requested elements
     were unavailable.
     """
+    print('new-loop-starting')
     status = False
     while not status:
         try:
+            print('try')
             available_links = ii.get_available_posts_links()
             status = True
+            print('success')
         except:
+            print('fail')
             status = False
 
     for link in ii.get_available_posts_links():
@@ -55,6 +63,7 @@ while len(collected_post_links) < posts_count:
             collected_post_links.append(link)
             with open(config.post_links_file, 'a') as fout:
                 fout.write(f'{link}\n')
+                print('dump-links')
     ii.scroll_down(1080)
 
 ii.quit()

@@ -173,16 +173,17 @@ def get_postrate(dates, values, rate):
     rate_values = []
 
     while True:
-        first_date = dates[index]
+        # first_date = dates[index]
         first_value = values[index]
 
         if index + rate >= len(dates):
             break
 
+        next_date = dates[index + rate]
         next_value = values[index + rate]
         rate_value = next_value - first_value
 
-        rate_dates.append(first_date)
+        rate_dates.append(next_date)
         rate_values.append(rate_value)
 
         index += 1
@@ -196,6 +197,6 @@ script
 dates, postids = get_datetimes_and_postids(False)
 dates, postids = compress(dates, postids)
 dates, postids = interpolate(dates, postids)
-rdates, rates = get_postrate(dates, postids, 7)
+rdates, rates = get_postrate(dates, postids, 365)
 plotXY(dates, postids)
 plotXY(rdates, rates)
