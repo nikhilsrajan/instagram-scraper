@@ -2,12 +2,14 @@ import config
 from InstagramInterface import InstagramInterface
 
 ii = InstagramInterface(config.chromedrive_executable_path)
-ii.go_to('https://instagram.com')
 
 """
 until login is successful, keep trying
 wrote this way to not have unnecessary delays
+--
+logging in is required as scrolling gets halted
 """
+ii.go_to('https://instagram.com')
 login_success = False 
 while not login_success:
     login_success = ii.login(config.username, config.password)
@@ -20,7 +22,6 @@ but it is possible that this pop up might not appear
 post_login_success = False
 while not post_login_success:
     post_login_success = ii.post_login()
-
 
 ii.go_to_account(config.target_username)
 posts_count = ii.get_posts_count()
@@ -52,6 +53,8 @@ while len(collected_post_links) < posts_count:
     for link in ii.get_available_posts_links():
         if link not in collected_post_links:
             collected_post_links.append(link)
-            with open(f'{config.target_username}_post_links.txt', 'a') as fout:
+            with open(config.post_links_file, 'a') as fout:
                 fout.write(f'{link}\n')
     ii.scroll_down(1080)
+
+ii.quit()

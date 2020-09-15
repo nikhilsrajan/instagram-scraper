@@ -8,13 +8,22 @@ but it also turns out, if one has a link to a post by a public account,
 you don't need to login to view the post, consequently collect datetime
 thus,
 """
-
-target_file = f'{config.target_username}_post_links.txt'
-
 ii = InstagramInterface(config.chromedrive_executable_path)
 
+if config.login_for_datetimes_collection:
+    """
+    see script_collect_post_links
+    """
+    ii.go_to('https://instagram.com')
+    login_success = False 
+    while not login_success:
+        login_success = ii.login(config.username, config.password)
+    post_login_success = False
+    while not post_login_success:
+        post_login_success = ii.post_login()
+
 datetime_strings = []
-with open(target_file, 'r+') as fin:
+with open(config.post_links_file, 'r+') as fin:
     for line in fin:
         link = line.replace('\n', '')
         ii.go_to(link)
@@ -37,3 +46,4 @@ with open(target_file, 'r+') as fin:
         with open(config.datetimes_file, 'a') as fout:
             fout.write(f'{datetime_string}\n')
             
+ii.quit()

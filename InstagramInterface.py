@@ -4,6 +4,12 @@ class InstagramInterface(object):
     def __init__(self, chromedrive_executable_path):
         self.driver = webdriver.Chrome(executable_path=chromedrive_executable_path)
 
+    def close(self):
+        self.driver.close()
+
+    def quit(self):
+        self.driver.quit()
+
     def go_to(self, url):
         status = True
         try:
