@@ -29,5 +29,5 @@ python analysis.py
 
 - `script_collect_post_links.py` collects links to each post by `target_username` to `post_links_file`.
 - `script_collect_datetimes.py` reads and goes to each link in `post_links_file` and writes it to `datetimes_file`.
-- `analysis.py` reads and makes a list of date-time and plots it.
+- `analysis.py` reads `datetimes_file` and plots graphs for analysis.
 
