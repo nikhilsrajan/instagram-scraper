@@ -12,6 +12,7 @@ A better "How to run" would be written later, but for now, I would just explain 
     - `username` and `password` to login into Instagram, 
     - the username whose information you wish to scrape through in `target_username`, 
     - boolean `login_for_datetimes_collection` which is `True` if `target_username` is a private account, else can be set `False` (recommended)
+    - path to the file where you wish to store the basic information of an account in `account_info_file`,
     - path to the file where you wish to store the links to the posts in `post_links_file`, and 
     - path to the file where you wish to store the datetimes of each post in `datetimes_file`
 
@@ -20,8 +21,7 @@ Finally,
 ```
 pipenv install
 pipenv shell
-python script_collect_post_links.py
-python script_collect_datetimes.py
+python run.py
 python analysis.py
 ```
 
