@@ -34,11 +34,11 @@ collects all the post links that are available
 scrolls down
 new post links appear (lazy-load)
 repeat
+--
+if step one fails MAX_POSTLINK_FAILS, resize  window
 """
-"""
-resized the window because in one case, I think get_available_posts_links failed.
-"""
-ii.resize_window(1080, 780)
+MAX_POSTLINK_FAILS = 100
+fail_counts = 0
 while len(collected_post_links) < posts_count:
     """
     This while loop was added because there
@@ -57,6 +57,11 @@ while len(collected_post_links) < posts_count:
         except:
             print('fail')
             status = False
+            fail_counts += 1
+            if fail_counts >= MAX_POSTLINK_FAILS:
+                print('resizing window')
+                ii.resize_window_by_preset()
+                fail_counts = 0
 
     for link in ii.get_available_posts_links():
         if link not in collected_post_links:

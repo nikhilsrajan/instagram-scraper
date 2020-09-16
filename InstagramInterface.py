@@ -3,9 +3,24 @@ from selenium import webdriver
 class InstagramInterface(object):
     def __init__(self, chromedrive_executable_path):
         self.driver = webdriver.Chrome(executable_path=chromedrive_executable_path)
+        self.resize_options = [
+            (400, 563),
+            (1080, 720),
+        ]
+        self.resize_index = 0
 
     def resize_window(self, width, height):
         self.driver.set_window_size(width, height)
+
+    def resize_window_by_preset(self):
+        if self.resize_index == len(self.resize_options):
+            raise Exception('Ran out of resize options. Must rest resize index.')
+        dim = self.resize_options[self.resize_index]
+        self.resize_window(dim[0], dim[1])
+        self.resize_index += 1
+
+    def reset_resize_index(self):
+        self.resize_index = 0
 
     def close(self):
         self.driver.close()
