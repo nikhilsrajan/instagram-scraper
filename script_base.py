@@ -3,7 +3,7 @@ from instagram_interface import InstagramInterface
 
 class ScriptBase(object):
     def __init__(self):
-        self.ii = InstagramInterface(config.chromedrive_executable_path)
+        self.ii = InstagramInterface(config.chromedriver_executable_path)
     
     def perform_login(self, username, password):
         """

@@ -1,6 +1,6 @@
 import config
 from script_collect_post_links import ScriptCollectPostlinks
-from script_collect_datetimes import ScriptCollectDatetimes
+from script_collect_post_info import ScriptCollectPostInfo
 
 ScriptCollectPostlinks(target_username=config.target_username,
                        post_links_file=config.post_links_file,
@@ -8,9 +8,9 @@ ScriptCollectPostlinks(target_username=config.target_username,
                        username=config.username,
                        password=config.password).run()
 
-ScriptCollectDatetimes(target_username=config.target_username,
-                       datetimes_file=config.datetimes_file,
+ScriptCollectPostInfo(target_username=config.target_username,
+                       post_info_file=config.post_info_file,
                        post_links_file=config.post_links_file,
-                       must_perform_login= config.login_for_datetimes_collection,
+                       must_perform_login= config.login_for_post_info_collection,
                        username=config.username,
                        password=config.password).run()

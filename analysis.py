@@ -1,28 +1,51 @@
 import config
 import matplotlib.pyplot as plt
 import datetime as dt
+import os.path
+from instagram_interface import InstagramInterface
 
-def plotXY(X, Y):
-    plt.plot_date(X, Y, fmt='k-')
-    plt.tight_layout()
-    plt.show()
+def get_post_info():
+    post_info = {}
+    post_id_lookup_by_datetime = {}
+    post_count = -1
 
+    if os.path.exists(config.account_info_file):
+        post_count = InstagramInterface.load_header_info(config.account_info_file)['posts']
 
-def get_datetimes_and_postids(get_time=True):
-    datetimes = []
-    post_count = 0
-    post_ids = []
-    with open(config.datetimes_file, 'r') as fin:
+    with open(config.post_info_file, 'r') as fin:
+        first = True
         for line in fin:
-            if get_time:
-                line = line.replace('.000Z\n', '')
-            else:
-                line = line.split('T')[0]
-            datetime = dt.datetime.fromisoformat(line)
-            datetimes.append(datetime)
-            post_ids.append(post_count)
+            if first:
+                if line == 'link, datetime_string, likes, views, case\n':
+                    first = False
+                    continue
+                else:
+                    raise Exception('header string "link, datetime_string, likes, views, case\\n" not found.')
+
+            line_info = {}
+
+            line = line.replace('\n', '')
+            link, datetime_string, likes, views, case = line.split(', ')
+
+            datetime_string = datetime_string.replace('.000Z', '')
+            datetime = dt.datetime.fromisoformat(datetime_string)
+            likes = int(likes)
+            views = int(views)
+            post_id = post_count
             post_count -= 1
-    return datetimes, post_ids
+
+            line_info = {
+                'link' : link,
+                'datetime': datetime,
+                'likes' : likes,
+                'views' : views,
+                'case' : case
+            }
+
+            post_info[post_id] = line_info
+            post_id_lookup_by_datetime[datetime] = post_id
+
+    return post_info, post_id_lookup_by_datetime
 
 
 def compress(dates, values):
@@ -191,14 +214,28 @@ def get_postrate(dates, values, rate):
     return rate_dates, rate_values
 
 
+def normalise_values(values):
+    max_v = max(values)
+    min_v = min(values)
+    m = 1 / (max_v - min_v)
+    c = -min_v / (max_v - min_v)
+    return [m * v + c for v in values]
+
 """
 script
 """
-dates, postids = get_datetimes_and_postids(False)
-dates, postids = compress(dates, postids)
-dates, postids = interpolate(dates, postids)
-rdates, rates = get_postrate(dates, postids, 365)
+post_info, post_id_lookup_by_datetime = get_post_info()
 
-plt.plot(dates, postids)
-plt.plot(rdates, rates)
-plt.show()
+
+# dates = raw_dates
+# ci_dates, postids = compress(dates, postids)
+# ci_dates, postids = interpolate(ci_dates, postids)
+# rdates, rates = get_postrate(ci_dates, postids, 365)
+# n_postids = normalise_values(postids)
+# n_rates = normalise_values(rates)
+# n_likes = normalise_values(likes)
+
+# plt.plot(ci_dates, n_postids)
+# plt.plot(rdates, n_rates)
+# plt.plot(raw_dates, n_likes, 'go')
+# plt.show()

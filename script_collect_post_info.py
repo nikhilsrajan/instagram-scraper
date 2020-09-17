@@ -2,21 +2,24 @@ import config
 from script_base import ScriptBase
 import os.path
 
-class ScriptCollectDatetimes(ScriptBase):
+class ScriptCollectPostInfo(ScriptBase):
     def __init__(self, 
                  target_username, 
-                 datetimes_file, 
+                 post_info_file, 
                  post_links_file, 
                  must_perform_login=False, 
                  username=None, 
-                 password=None):
+                 password=None,
+                 MAX_TRIES=25):
         ScriptBase.__init__(self)
         
         self.POST_COUNT = -1
         self.datetime_strings = []
+        self.likes = []
+        self.views = []
 
         self.target_username = target_username
-        self.datetimes_file = datetimes_file
+        self.post_info_file = post_info_file
         self.post_links_file = post_links_file
         self.must_perform_login = must_perform_login
 
@@ -28,6 +31,8 @@ class ScriptCollectDatetimes(ScriptBase):
 
         self.username = username
         self.password = password
+
+        self.MAX_TRIES = MAX_TRIES
 
     def print_progress(self):
         if len(self.datetime_strings) > 0:
@@ -54,7 +59,11 @@ class ScriptCollectDatetimes(ScriptBase):
             print('Warning: Cannot display progress.')
 
         first_run = True
+
         with open(self.post_links_file, 'r+') as fin:
+            with open(self.post_info_file, 'a') as fout:
+                fout.write(f'link, datetime_string, likes, views, case\n')
+
             for line in fin:
                 link = line.replace('\n', '')
                 self.ii.go_to(link)
@@ -66,6 +75,12 @@ class ScriptCollectDatetimes(ScriptBase):
 
                 status = False
                 datetime_string = ''
+                likes = -1
+                views = -1
+                case = -1  # InstagramInterface.get_likes()
+
+                fails = 0
+
                 """
                 two cases are tried to be handelled.
                 it is possible that I am still in the previously loaded page
@@ -77,16 +92,31 @@ class ScriptCollectDatetimes(ScriptBase):
                     try:
                         print('try')
                         datetime_string = self.ii.get_datetime_string()
+                        likes, views, case = self.ii.get_likes()
                         status = True
-                        print('success')
+                        print(f'success, case {case} encountered')
                     except:
                         print('fail')
                         status = False
-                        
-                print('dump-date')
+                        """
+                        sometimes failure happens because the element is not loaded yet (lazy load)
+                        and scrolling down BIT BY BIT helps
+                        if scrolled down too much, we lose information
+                        """
+                        self.ii.scroll_down(20)
+                        fails += 1
+                        if fails >= self.MAX_TRIES:
+                            """
+                            Possibly encountered the case where a post has 0 likes.
+                            0 likes results in absence of any element that contains likes or views.
+                            """
+                            likes = 0
+                            break
+
+                print('dump-info')
                 self.datetime_strings.append(datetime_string)
-                with open(config.datetimes_file, 'a') as fout:
-                    fout.write(f'{datetime_string}\n')
+                with open(self.post_info_file, 'a') as fout:
+                    fout.write(f'{link}, {datetime_string}, {likes}, {views}, {case}\n')
                 self.print_progress()
 
         self.ii.quit()

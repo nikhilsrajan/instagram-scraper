@@ -1,8 +1,8 @@
 from selenium import webdriver
 
 class InstagramInterface(object):
-    def __init__(self, chromedrive_executable_path):
-        self.driver = webdriver.Chrome(executable_path=chromedrive_executable_path)
+    def __init__(self, chromedriver_executable_path):
+        self.driver = webdriver.Chrome(executable_path=chromedriver_executable_path)
         self.resize_options = [
             (400, 563),
             (1080, 720),
@@ -83,7 +83,8 @@ class InstagramInterface(object):
                     fout.write('\n')
         return header_info        
     
-    def load_header_info(self, filepath):
+    @staticmethod
+    def load_header_info(filepath):
         header_info = {}
         with open(filepath, 'r') as fin:
             for line in fin:
@@ -155,3 +156,52 @@ class InstagramInterface(object):
     
     def get_datetime_string(self):
         return str(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/div[1]/article/div[3]/div[2]/a/time').get_attribute('datetime'))
+
+    def get_likes(self):
+        likes = -1
+        views = -1
+        case = -1
+        try:
+            """
+            case 1: N likes
+            """
+            likes = int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/div[1]/article/div[3]/section[2]/div/div/button/span').get_attribute('innerHTML').replace(',', ''))
+            case = 1
+        except:
+            try:
+                """
+                case 2: Liked by SOMEONE and N others
+                """
+                likes = int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/div[1]/article/div[3]/section[2]/div/div[2]/button/span').get_attribute('innerHTML').replace(',', '')) + 1
+                case = 2
+            except:
+                try:
+                    """
+                    case 3: M views -> <click> -> N likes
+                    """
+                    views = int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/div[1]/article/div[3]/section[2]/div/span/span').get_attribute('innerHTML').replace(',', ''))
+                    self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/div[1]/article/div[3]/section[2]/div/span').click()
+                    likes = int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/div[1]/article/div[3]/section[2]/div/div/div[4]/span').get_attribute('innerHTML').replace(',', ''))
+                    case = 3
+                except:
+                    """
+                    case 4: 1 view
+                    """
+                    try:
+                        view_button = self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/div[1]/article/div[3]/section[2]/div/span')
+                        views = int(view_button.get_attribute('innerHTML').split(' ')[0].replace(',', ''))
+                        view_button.click()
+                        likes = int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/div[1]/article/div[3]/section[2]/div/div/div[4]/span').get_attribute('innerHTML').replace(',', ''))
+                        case = 4
+                    except:
+                        """
+                        case 5: 1 like
+                        """
+                        try:
+                            likes = int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/div/article/div[3]/section[2]/div/div/button').get_attribute('innerHTML').split(' ')[0].replace(',', ''))
+                            case = 5
+                        except:
+                            raise Exception('Error: Encountered case not addressed.')
+
+
+        return likes, views, case

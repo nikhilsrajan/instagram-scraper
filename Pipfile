@@ -9,6 +9,7 @@ pylint = "*"
 [packages]
 matplotlib = "*"
 datetime = "*"
+os = "*"
 
 [requires]
 python_version = "3.7"

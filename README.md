@@ -14,7 +14,7 @@ A better "How to run" would be written later, but for now, I would just explain 
     - boolean `login_for_datetimes_collection` which is `True` if `target_username` is a private account, else can be set `False` (recommended)
     - path to the file where you wish to store the basic information of an account in `account_info_file`,
     - path to the file where you wish to store the links to the posts in `post_links_file`, and 
-    - path to the file where you wish to store the datetimes of each post in `datetimes_file`
+    - path to the file where you wish to store information of each post in `post_info_file`. Information is stored in a CSV format with header "`link, datetime_string, likes, views, case`"
 
 
 Finally,
@@ -22,12 +22,11 @@ Finally,
 pipenv install
 pipenv shell
 python run.py
-python analysis.py
+python analysis.py [WIP]
 ```
 
 ## What does each script do?
 
-- `script_collect_post_links.py` collects links to each post by `target_username` to `post_links_file`.
-- `script_collect_datetimes.py` reads and goes to each link in `post_links_file` and writes it to `datetimes_file`.
-- `analysis.py` reads `datetimes_file` and plots graphs for analysis.
+- `run.py`, first, goes through the `target_username` profile and collects links to each post. Then it goes to each post and collects information - date-time, views, likes, and dumps them into `post_info_file`
+- `analysis.py` reads `post_info_file` and plots graphs for analysis. [WIP]
 

@@ -8,7 +8,7 @@ class ScriptCollectPostlinks(ScriptBase):
                  account_info_file,
                  username, 
                  password,
-                 MAX_POSTLINK_FAILS = 100):
+                 MAX_POSTLINK_FAILS = 25):
         ScriptBase.__init__(self)
         
         self.collected_post_links = []
