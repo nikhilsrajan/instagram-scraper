@@ -1,4 +1,4 @@
-# Instagram Scrapper
+# Instagram Scraper
 Python 3.7 tool to scrape information from Instagram using Selenium.
 
 ## How to run
