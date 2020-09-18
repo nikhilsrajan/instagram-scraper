@@ -16,14 +16,30 @@ A better "How to run" would be written later, but for now, I would just explain 
     - path to the file where you wish to store the links to the posts in `post_links_file`, and 
     - path to the file where you wish to store information of each post in `post_info_file`. Information is stored in a CSV format with header "`link, datetime_string, likes, views, case`"
 
+        ```
+        # sample-config.py
 
-Finally,
-```
-pipenv install
-pipenv shell
-python run.py
-python analysis.py [WIP]
-```
+        chromedriver_executable_path = 'path/to/chromedriver.exe'
+
+        username = 'instagram-username'
+        password = 'instagram-password'
+
+        target_username = 'instagram-username-whose-info-you-want-to-scrape'
+        login_for_post_info_collection = False   # False if target_username is a public profile, else True
+
+        account_info_file = f'./data/{target_username}_account_info.txt'
+        post_links_file = f'./data/{target_username}_post_links.txt'
+        post_info_file = f'./data/{target_username}_post_info.csv'
+        ```
+
+
+- Finally,
+    ```
+    pipenv install
+    pipenv shell
+    python run.py
+    python analysis.py [WIP]
+    ```
 
 ## What does each script do?
 
