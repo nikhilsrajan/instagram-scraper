@@ -10,13 +10,17 @@ class ScriptCollectPostInfo(ScriptBase):
                  must_perform_login=False, 
                  username=None, 
                  password=None,
+                 SCROLL_DOWN_PIXELS=20,
                  MAX_TRIES=25):
         ScriptBase.__init__(self)
         
         self.POST_COUNT = -1
-        self.datetime_strings = []
-        self.likes = []
-        self.views = []
+
+        self.last_datetime_string = 'NO-DATE-COLLECTED'
+        self.last_likes = -1
+        self.last_views = -1
+        self.last_case = -1
+        self.post_info_collected_count = 0
 
         self.target_username = target_username
         self.post_info_file = post_info_file
@@ -32,15 +36,21 @@ class ScriptCollectPostInfo(ScriptBase):
         self.username = username
         self.password = password
 
+        self.SCROLL_DOWN_PIXELS = SCROLL_DOWN_PIXELS
         self.MAX_TRIES = MAX_TRIES
 
     def print_progress(self):
-        if len(self.datetime_strings) > 0:
-            print(self.datetime_strings[-1], end='', sep='')
+        if self.post_info_collected_count > 0:
+            print(f'datetime_string: {self.last_datetime_string}')
+            print(f'likes: {self.last_likes}')
+            print(f'views: {self.last_views}')
             if self.POST_COUNT == -1:
                 print('\n')
             else:
-                print(f' -- {len(self.datetime_strings)} / {self.POST_COUNT} [ {len(self.datetime_strings)/self.POST_COUNT*100} % ]')
+                whole, decimal = str(self.post_info_collected_count/self.POST_COUNT*100).split('.')
+                percentage = whole + '.' + decimal[0:3]
+                print(f'{self.post_info_collected_count} / {self.POST_COUNT} [ {percentage} % ]')
+                print('---')
 
     def run(self):
         """
@@ -59,12 +69,20 @@ class ScriptCollectPostInfo(ScriptBase):
             print('Warning: Cannot display progress.')
 
         first_run = True
+        # SKIP_LINKS = 36
+        # links_skipped = 0
 
         with open(self.post_links_file, 'r+') as fin:
             with open(self.post_info_file, 'a') as fout:
                 fout.write(f'link, datetime_string, likes, views, case\n')
 
             for line in fin:
+
+                # if links_skipped < SKIP_LINKS:
+                #     self.post_info_collected_count += 1
+                #     links_skipped += 1
+                #     continue
+
                 link = line.replace('\n', '')
                 self.ii.go_to(link)
 
@@ -88,7 +106,7 @@ class ScriptCollectPostInfo(ScriptBase):
                 it is also possible that datetime collection is attempted while a page is loading
                 in that case exception would be raise when element is sought, status remains False
                 """
-                while not status and datetime_string not in self.datetime_strings:
+                while not status:
                     try:
                         print('try')
                         datetime_string = self.ii.get_datetime_string()
@@ -97,13 +115,7 @@ class ScriptCollectPostInfo(ScriptBase):
                         print(f'success, case {case} encountered')
                     except:
                         print('fail')
-                        status = False
-                        """
-                        sometimes failure happens because the element is not loaded yet (lazy load)
-                        and scrolling down BIT BY BIT helps
-                        if scrolled down too much, we lose information
-                        """
-                        self.ii.scroll_down(20)
+                        
                         fails += 1
                         if fails >= self.MAX_TRIES:
                             """
@@ -113,8 +125,23 @@ class ScriptCollectPostInfo(ScriptBase):
                             likes = 0
                             break
 
+                        status = False
+                        """
+                        sometimes failure happens because the element is not loaded yet (lazy load)
+                        and scrolling down BIT BY BIT helps
+                        if scrolled down too much, we lose information
+                        """
+                        self.ii.scroll_down(self.SCROLL_DOWN_PIXELS)
+
+                if datetime_string == '':
+                    raise Exception('datetime_string is empty.')
+
                 print('dump-info')
-                self.datetime_strings.append(datetime_string)
+                self.post_info_collected_count += 1
+                self.last_datetime_string = datetime_string
+                self.last_likes = likes
+                self.last_views = views
+                self.last_case = case
                 with open(self.post_info_file, 'a') as fout:
                     fout.write(f'{link}, {datetime_string}, {likes}, {views}, {case}\n')
                 self.print_progress()

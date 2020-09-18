@@ -104,7 +104,14 @@ class InstagramInterface(object):
         return at_private_account_page
 
     def get_username(self):
-        return str(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/div[1]/h2').get_attribute('innerHTML'))
+        try:
+            username = str(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/div[1]/h2').get_attribute('innerHTML'))
+        except:
+            """
+            case when probably there is no given name
+            """
+            username = str(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/div[1]/h1').get_attribute('innerHTML'))
+        return username
 
     def get_posts_count(self):
         return int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/ul/li[1]/span/span').get_attribute('innerHTML').replace(',', ''))
@@ -116,7 +123,11 @@ class InstagramInterface(object):
         return int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/ul/li[3]/a/span').get_attribute('innerHTML').replace(',', ''))
     
     def get_given_name(self):
-        return str(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/div[2]/h1').get_attribute('innerHTML'))
+        try:
+            given_name = str(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/div[2]/h1').get_attribute('innerHTML'))
+        except:
+            given_name = ''
+        return given_name
 
     def get_bio(self):
         bio = ''

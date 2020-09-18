@@ -1,5 +1,6 @@
 import config
 from script_base import ScriptBase
+import time
 
 class ScriptCollectPostlinks(ScriptBase):
     def __init__(self, 
@@ -8,7 +9,11 @@ class ScriptCollectPostlinks(ScriptBase):
                  account_info_file,
                  username, 
                  password,
-                 MAX_POSTLINK_FAILS = 25):
+                 SCROLL_DOWN_PIXELS=500,
+                 MAX_POSTLINK_FAILS=25,
+                 PAUSE_AFTER_POSTS_COUNT=1000,
+                 PAUSE_FOR_SECS=60*5,
+                 USELESS_SCROLLS_LIMIT=100):
         ScriptBase.__init__(self)
         
         self.collected_post_links = []
@@ -19,7 +24,11 @@ class ScriptCollectPostlinks(ScriptBase):
         self.username = username
         self.password = password
 
+        self.SCROLL_DOWN_PIXELS = SCROLL_DOWN_PIXELS
         self.MAX_POSTLINK_FAILS = MAX_POSTLINK_FAILS
+        self.PAUSE_AFTER_POSTS_COUNT = PAUSE_AFTER_POSTS_COUNT
+        self.PAUSE_FOR_SECS = PAUSE_FOR_SECS
+        self.USELESS_SCROLLS_LIMIT = USELESS_SCROLLS_LIMIT
 
     def run(self):
         """
@@ -44,6 +53,8 @@ class ScriptCollectPostlinks(ScriptBase):
         if step one fails MAX_POSTLINK_FAILS, resize  window
         """
         fail_counts = 0
+        count_to_pause = 0
+        useless_scrolls_count = 0
         while len(self.collected_post_links) < posts_count:
             """
             This while loop was added because there
@@ -68,12 +79,30 @@ class ScriptCollectPostlinks(ScriptBase):
                         self.ii.resize_window_by_preset()
                         fail_counts = 0
             
-            print('dump-links')
+            has_collected_new_links = False
             for link in available_links:
                 if link not in self.collected_post_links:
+                    print('dump-link')
+                    useless_scrolls_count = 0
+                    has_collected_new_links = True
+                    count_to_pause += 1
                     self.collected_post_links.append(link)
                     with open(config.post_links_file, 'a') as fout:
                         fout.write(f'{link}\n')
-            self.ii.scroll_down(1080)
+            
+            if not has_collected_new_links:
+                print('useless scroll')
+                useless_scrolls_count += 1
+                if useless_scrolls_count >= self.USELESS_SCROLLS_LIMIT:
+                    print('too many useless scrolls')
+                    print('abrupt termination.')
+                    break
+
+            if count_to_pause >= self.PAUSE_AFTER_POSTS_COUNT:
+                print(f'cooling down, {self.PAUSE_FOR_SECS} secs...')
+                time.sleep(self.PAUSE_FOR_SECS)
+                count_to_pause = 0
+
+            self.ii.scroll_down(self.SCROLL_DOWN_PIXELS)
 
         self.ii.quit()
