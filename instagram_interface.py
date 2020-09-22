@@ -1,4 +1,5 @@
 from selenium import webdriver
+import time
 
 class InstagramInterface(object):
     def __init__(self, chromedriver_executable_path):
@@ -72,7 +73,7 @@ class InstagramInterface(object):
             with open(filepath, 'w+') as fout:
                 for k, v in header_info.items():
                     fout.write(f'{k}: ')
-                    if k in ['bio']:
+                    if k in ['bio', 'given name']:
                         for c in v:
                             try:
                                 fout.write(c)
@@ -214,5 +215,71 @@ class InstagramInterface(object):
                         except:
                             raise Exception('Error: Encountered case not addressed.')
 
-
         return likes, views, case
+    
+    def get_following(self, following_file):
+        following_count = self.get_following_count()
+        following_set = set()
+        following = self.driver.find_elements_by_class_name("-nal3")[2]
+        following.click()
+        time.sleep(2)
+        initialise_vars = 'elem = document.getElementsByClassName("isgrP")[0]; followers = parseInt(document.getElementsByClassName("g47SY")[1].innerText); times = parseInt(followers * 0.14); followersInView1 = document.getElementsByClassName("FPmhX").length'
+        initial_scroll = 'elem.scrollTop += 500'
+        next_scroll = 'elem.scrollTop += 1500'
+        
+        with open('./jquery-3.3.1.min.js', 'r') as jquery_js:
+            # 3) Read the jquery from a file
+            jquery = jquery_js.read()
+            # 4) Load jquery lib
+            self.driver.execute_script(jquery)
+            # scroll down the page
+            self.driver.execute_script(initialise_vars)
+            self.driver.execute_script(initial_scroll)
+            time.sleep(3)
+
+            li_index = 0
+
+            li_elems_not_found_fails = 0
+            MAX_LI_ELEMS_NOT_FOUND_FAILS = 10
+            useless_scrolls = 0
+            MAX_USELESS_SCROLLS = 10
+
+            next = True
+            while next:
+                was_useless_scroll = True
+                found_li_elements = False
+                while not found_li_elements:
+                    try:
+                        li_elements = self.driver.find_element_by_class_name('PZuss').find_elements_by_tag_name('li')
+                        found_li_elements = True
+                    except:
+                        li_elems_not_found_fails += 1
+                        if li_elems_not_found_fails > MAX_LI_ELEMS_NOT_FOUND_FAILS:
+                            raise Exception('too many li_elems_not_found fails')
+                        time.sleep(2)
+
+                li_elems_not_found_fails = 0
+                while li_index < len(li_elements):
+                    was_useless_scroll = False
+                    profile_link = li_elements[li_index].find_element_by_xpath('div/div[1]/div[2]/div[1]/span/a').get_attribute('href')
+                    li_index += 1
+                    following_set.add(profile_link)
+                    print(f'{profile_link}, {li_index+1} / {following_count} [ {(li_index+1) / following_count * 100} % ]')
+                    with open(following_file, 'a') as fout:
+                        fout.write(f'{profile_link}\n')
+                
+                if was_useless_scroll:
+                    useless_scrolls += 1
+                else:
+                    useless_scrolls = 0
+                
+                if useless_scrolls > MAX_USELESS_SCROLLS:
+                    print('too many useless scrolls')
+                    next = False
+
+                self.driver.execute_script(next_scroll)
+                time.sleep(3)
+                if len(li_elements) >= following_count:
+                    next = False
+
+            return list(following_set)
