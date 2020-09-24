@@ -98,11 +98,35 @@ class InstagramInterface(object):
         return header_info
 
     def check_if_at_private_account_page(self):
+        """
+        not too reliable.. needs improvement
+        """
+        text = ''
         try:
-            at_private_account_page = str(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/div/article/div/div/h2').get_attribute('innerHTML')) == 'This Account is Private'
+            text = self.driver.find_element_by_tag_name('main') \
+                              .find_element_by_class_name('rkEop') \
+                              .get_attribute('innerHTML')
         except:
+            try:
+                text = self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/div/article/div[1]/div/h2').get_attribute('innerHTML')
+            except:
+                at_private_account_page = False
+        
+        if text == 'This Account is Private':
+            at_private_account_page = True
+        else:
             at_private_account_page = False
+        
         return at_private_account_page
+    
+    def is_following_list_accessible(self):
+        try:
+            self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/ul/li[3]/a/span')
+            accessible = True
+        except:
+            self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/ul/li[3]/span/span')
+            accessible = False
+        return accessible
 
     def get_username(self):
         try:
@@ -115,13 +139,25 @@ class InstagramInterface(object):
         return username
 
     def get_posts_count(self):
-        return int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/ul/li[1]/span/span').get_attribute('innerHTML').replace(',', ''))
+        try:
+            posts_count = int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/ul/li[1]/a/span').get_attribute('innerHTML').replace(',', ''))  
+        except:
+            posts_count = int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/ul/li[1]/span/span').get_attribute('innerHTML').replace(',', ''))                        
+        return posts_count
 
     def get_followers_count(self):
-        return int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/ul/li[2]/a/span').get_attribute('title').replace(',', ''))
+        try:
+            followers_count = int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/ul/li[2]/a/span').get_attribute('title').replace(',', ''))
+        except:
+            followers_count = int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/ul/li[2]/span/span').get_attribute('title').replace(',', ''))
+        return followers_count
 
     def get_following_count(self):
-        return int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/ul/li[3]/a/span').get_attribute('innerHTML').replace(',', ''))
+        try:
+            following_count = int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/ul/li[3]/a/span').get_attribute('innerHTML').replace(',', ''))
+        except:
+            following_count = int(self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/header/section/ul/li[3]/span/span').get_attribute('innerHTML').replace(',', ''))
+        return following_count
     
     def get_given_name(self):
         try:
@@ -217,14 +253,14 @@ class InstagramInterface(object):
 
         return likes, views, case
     
-    def get_following(self, following_file):
+    def get_following(self):
         following_count = self.get_following_count()
         following_set = set()
         following = self.driver.find_elements_by_class_name("-nal3")[2]
         following.click()
         time.sleep(2)
         initialise_vars = 'elem = document.getElementsByClassName("isgrP")[0]; followers = parseInt(document.getElementsByClassName("g47SY")[1].innerText); times = parseInt(followers * 0.14); followersInView1 = document.getElementsByClassName("FPmhX").length'
-        initial_scroll = 'elem.scrollTop += 500'
+        # initial_scroll = 'elem.scrollTop += 500'
         next_scroll = 'elem.scrollTop += 1500'
         
         with open('./jquery-3.3.1.min.js', 'r') as jquery_js:
@@ -234,15 +270,15 @@ class InstagramInterface(object):
             self.driver.execute_script(jquery)
             # scroll down the page
             self.driver.execute_script(initialise_vars)
-            self.driver.execute_script(initial_scroll)
+            # self.driver.execute_script(initial_scroll)
             time.sleep(3)
 
             li_index = 0
 
             li_elems_not_found_fails = 0
-            MAX_LI_ELEMS_NOT_FOUND_FAILS = 10
+            MAX_LI_ELEMS_NOT_FOUND_FAILS = 5
             useless_scrolls = 0
-            MAX_USELESS_SCROLLS = 10
+            MAX_USELESS_SCROLLS = 5
 
             next = True
             while next:
@@ -261,12 +297,13 @@ class InstagramInterface(object):
                 li_elems_not_found_fails = 0
                 while li_index < len(li_elements):
                     was_useless_scroll = False
-                    profile_link = li_elements[li_index].find_element_by_xpath('div/div[1]/div[2]/div[1]/span/a').get_attribute('href')
+                    try: 
+                        profile_link = li_elements[li_index].find_element_by_xpath('div/div[1]/div[2]/div[1]/span/a').get_attribute('href')
+                    except:
+                        profile_link = li_elements[li_index].find_element_by_xpath('div/div[2]/div[1]/div/div/span/a').get_attribute('href')
                     li_index += 1
                     following_set.add(profile_link)
-                    print(f'{profile_link}, {li_index+1} / {following_count} [ {(li_index+1) / following_count * 100} % ]')
-                    with open(following_file, 'a') as fout:
-                        fout.write(f'{profile_link}\n')
+                    print(f'{profile_link}, {li_index} / {following_count} [ {(li_index) / following_count * 100} % ]')
                 
                 if was_useless_scroll:
                     useless_scrolls += 1
