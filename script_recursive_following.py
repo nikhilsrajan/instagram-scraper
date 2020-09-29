@@ -4,6 +4,39 @@ import time
 import os.path
 import os
 
+"""
+usage:
+-----
+ScriptRecursiveFollowing(username=config.username, 
+                         password=config.password, 
+                         target_username='account-to-scrape', 
+                         root_folder='path/to/{(.*)_visited.csv files}',
+                         following_folder='path/to/{(.*)_following.csv files}',
+                         MAX_DEPTH=1).start()
+
+working:
+-------
+1. logs in using self.username, and self.password
+2. goes to target_username
+3. creates {self.username}_{target_username}_visited.csv file at self.root_folder if it doesn't exist
+4. starts collecting the links to the profiles being followed
+5. stores the links in the file {target_username}_following.csv at self.following_folder
+6. reads the {target_username}_following.csv and goes to each of those profiles 
+7. collects the links to their followings into respective (.*)_following.csv files
+   ...
+
+notes:
+-----
+- it's basically BFS
+- the {self.username}_{target_username}_visited.csv stores the state of the BFS
+- if the corresponding (.*)_following.csv file exists, then the goes to the next link
+- MAX_DEPTH:
+  - 0 : collects only the followings of the target_username
+  - 1 : collects the followings of target_username, and the followings' followings.
+    ...
+
+"""
+
 class ScriptRecursiveFollowing(ScriptBase):
     """
     script to:
@@ -13,7 +46,7 @@ class ScriptRecursiveFollowing(ScriptBase):
     4. repeat once again
     5. repeat once again
     """
-    def __init__(self, username, password, target_username, root_folder, MAX_DEPTH=2):
+    def __init__(self, username, password, target_username, root_folder, following_folder=None, MAX_DEPTH=1):
         if not os.path.exists(root_folder):
             raise Exception(f'{root_folder} not found')
         
@@ -24,10 +57,17 @@ class ScriptRecursiveFollowing(ScriptBase):
 
         root_folder = os.path.normpath(root_folder)
 
-        self.visited_file = os.path.join(root_folder, 'visited.csv')
-        self.following_folder = os.path.join(root_folder, 'following')
+        self.visited_file = os.path.join(root_folder, f'{username}_{target_username}_visited.csv')
 
-        self.mkdir(self.following_folder)
+        if following_folder is None:
+            self.following_folder = os.path.join(root_folder, 'following')
+            self.mkdir(self.following_folder)
+        else:
+            if os.path.exists(following_folder):
+                self.following_folder = following_folder
+            else:
+                raise Exception('following_folder doesn\'t exist.')
+        
         self.visited = set()
         self.queue = []
         
@@ -57,6 +97,7 @@ class ScriptRecursiveFollowing(ScriptBase):
                 top = queue.pop()
                 for child in top.children:
                     if child not in visited:
+                        visited.push(child)
                         queue.push(child)
                 visited.push(top)
             """
@@ -72,6 +113,7 @@ class ScriptRecursiveFollowing(ScriptBase):
                 terminate = False
                 if self.scraped == True:
                     self.queue.insert(0, self.profile)
+                    self.visited.add(self.profile)
                     while len(self.queue) > 0 and not terminate:
                         level_size = len(self.queue)
                         while level_size > 0 and not terminate:
@@ -88,8 +130,7 @@ class ScriptRecursiveFollowing(ScriptBase):
                                             child = self.get_username(line.replace('\n', ''))
                                             if child not in self.visited:
                                                 self.queue.append(child)
-
-                            self.visited.add(top)
+                                                self.visited.add(child)
 
                             line = visited_file.readline()
                             if not line:
@@ -119,6 +160,7 @@ class ScriptRecursiveFollowing(ScriptBase):
         
         if not self.scraped:
             self.queue.insert(0, self.profile)
+            self.visited.add(self.profile)
         else:
             self.accessible = None
         while len(self.queue) > 0:
@@ -127,12 +169,29 @@ class ScriptRecursiveFollowing(ScriptBase):
                 level_size -= 1
                 self.profile = self.queue.pop(0)
 
+                file_already_exists = False
+
                 self.ii.go_to_account(self.profile)
-                profile_header = self.ii.get_header_info()
+                
+                if self.ii.page_removed():
+                    profile_header = {
+                        'username' : '',
+                        'posts' : -1,
+                        'followers' : -1,
+                        'following' : -1,
+                        'given name' : '',
+                        'bio' : '',
+                        'website' : ''
+                    }
+                else:
+                    profile_header = self.ii.get_header_info()
                 
                 if self.accessible is None:
                     self.log(f'{self.profile}, {profile_header["posts"]}, {profile_header["followers"]}, {profile_header["following"]}')
-                    self.accessible = self.ii.is_following_list_accessible()
+                    if profile_header['following'] == -1:
+                        self.accessible = False    
+                    else:
+                        self.accessible = self.ii.is_following_list_accessible()
                     self.log(f', {self.accessible}')
                 
                 if self.accessible:
@@ -142,6 +201,8 @@ class ScriptRecursiveFollowing(ScriptBase):
                         with open(self.get_following_file(self.profile), 'w+') as fout:
                             for following in following_list:
                                 fout.write(f'{following}\n')
+                    else:
+                        file_already_exists = True
 
                     if profile_header['following'] > 0:
                         with open(self.get_following_file(self.profile), 'r') as fin:
@@ -150,14 +211,20 @@ class ScriptRecursiveFollowing(ScriptBase):
                                     child = self.get_username(line.replace('\n', ''))
                                     if child not in self.visited:
                                         self.queue.append(child)
+                                        self.visited.add(child)
                         
                     self.scraped = True
                     self.log(f', {self.scraped}')
                 
                 self.log('\n')
-                self.visited.add(self.profile)
                 self.accessible = None
                 self.scraped = None
+
+                if file_already_exists:
+                    wait_for_secs = 30
+                    print(f'{self.get_following_file(self.profile)} already exists.')
+                    print(f'waiting {wait_for_secs} secs')
+                    time.sleep(wait_for_secs)
                 
             self.depth += 1
 

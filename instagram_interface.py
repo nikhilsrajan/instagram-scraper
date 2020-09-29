@@ -1,5 +1,7 @@
 from selenium import webdriver
 import time
+import random
+import datetime
 
 class InstagramInterface(object):
     def __init__(self, chromedriver_executable_path):
@@ -9,6 +11,7 @@ class InstagramInterface(object):
             (1080, 720),
         ]
         self.resize_index = 0
+        self.current_url = ''
 
     def resize_window(self, width, height):
         self.driver.set_window_size(width, height)
@@ -33,6 +36,7 @@ class InstagramInterface(object):
         status = True
         try:
             self.driver.get(url)
+            self.current_url = url
         except:
             status = False
         return status
@@ -58,6 +62,13 @@ class InstagramInterface(object):
         except:
             status = False
         return status
+
+    def page_removed(self):
+        try:
+            text = self.driver.find_element_by_xpath('/html/body/div/div[1]/div/div/h2').get_attribute('innerHTML')
+        except:
+            text = ''
+        return text == 'Sorry, this page isn\'t available.'
 
     def get_header_info(self, filepath=None):
         header_info = {
@@ -274,27 +285,43 @@ class InstagramInterface(object):
             time.sleep(3)
 
             li_index = 0
-
             li_elems_not_found_fails = 0
-            MAX_LI_ELEMS_NOT_FOUND_FAILS = 5
+            MAX_LI_ELEMS_NOT_FOUND_FAILS = 15
             useless_scrolls = 0
             MAX_USELESS_SCROLLS = 5
 
             next = True
             while next:
-                was_useless_scroll = True
                 found_li_elements = False
                 while not found_li_elements:
+                    """
+                    steps:
+                    -----
+                    1. find the list elements which contains the link to the profiles being followed
+                    2. if the list elements are not found, try MAX_LI_ELEMS_NOT_FOUND_FAILS times
+                    3. store them in following_set
+                    4. scroll down, let more li elements load
+                    5. if new li elements haven't loaded, it was a useless scroll
+                    6. repeat until len(following_set) >= following_count mentioned on the profile header
+                       or useless_scrolls > MAX_USELESS_SCROLLS
+                    """
                     try:
                         li_elements = self.driver.find_element_by_class_name('PZuss').find_elements_by_tag_name('li')
                         found_li_elements = True
+                        li_elems_not_found_fails = 0
                     except:
                         li_elems_not_found_fails += 1
                         if li_elems_not_found_fails > MAX_LI_ELEMS_NOT_FOUND_FAILS:
+                            with open('get_following_li_DUMP.txt', 'a') as dump:
+                                dump.write(f'dumped at {str(datetime.datetime.now())}\n')
+                                dump.write(f'current_url: {self.current_url}\n')
+                                for following in following_set:
+                                    dump.write(f'{following}\n')
+                                dump.write('---\n')
                             raise Exception('too many li_elems_not_found fails')
-                        time.sleep(2)
+                        time.sleep(random.uniform(4, 6))
 
-                li_elems_not_found_fails = 0
+                was_useless_scroll = True
                 while li_index < len(li_elements):
                     was_useless_scroll = False
                     try: 
@@ -315,7 +342,7 @@ class InstagramInterface(object):
                     next = False
 
                 self.driver.execute_script(next_scroll)
-                time.sleep(3)
+                time.sleep(random.uniform(2, 4))
                 if len(li_elements) >= following_count:
                     next = False
 
